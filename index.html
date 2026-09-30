@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GetSalus</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#2F6B45">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF1EC;--card:#fff;--ink:#16261D;--mute:#5B6B60;--line:#D5DCD3;--green:#2F6B45;--gold:#F0B429;--chili:#C8452B;--soft:#E1EBDD;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121A15;--card:#1B261F;--ink:#EAF1EA;--mute:#93A597;--line:#2B3A30;--green:#6FBF8A;--soft:#22332A}}
+:root[data-theme="dark"]{--bg:#121A15;--card:#1B261F;--ink:#EAF1EA;--mute:#93A597;--line:#2B3A30;--green:#6FBF8A;--soft:#22332A}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif}
+main{max-width:520px;margin:0 auto;padding:20px 18px 96px}
+h1,h2,h3{font-family:'Bricolage Grotesque',Figtree,sans-serif;line-height:1.1;margin:0}
+h1{font-size:2.3rem;font-weight:800}h2{font-size:1.5rem;font-weight:800;margin-bottom:12px}h3{font-size:1.05rem}
+p{margin:0 0 12px}.mute{color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+button,.btn{font:600 1rem Figtree,sans-serif;border:0;border-radius:12px;padding:14px 18px;background:var(--green);color:#fff;cursor:pointer;width:100%;display:block;text-align:center}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:focus-visible,.chip:focus-within,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button:disabled{opacity:.5}
+label.f{display:block;font-weight:600;margin:16px 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative}.chip input{position:absolute;opacity:0}
+.chip span{display:block;padding:8px 14px;border:1px solid var(--line);border-radius:99px;background:var(--card);cursor:pointer}
+.chip input:checked+span{background:var(--green);border-color:var(--green);color:#fff}
+input[type=text]{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav div{display:flex;max-width:520px;width:100%}nav button{background:none;color:var(--mute);border-radius:0;padding:14px 6px;font-size:.95rem}
+nav button[aria-current=true]{color:var(--green);box-shadow:inset 0 3px 0 var(--green)}
+.drop{display:block;border:2px dashed var(--green);border-radius:16px;padding:44px 16px;text-align:center;background:var(--soft);cursor:pointer;margin:16px 0}
+.drop b{font:800 1.3rem 'Bricolage Grotesque',sans-serif;display:block}
+.drop input{display:none}
+img.shot{width:100%;max-height:260px;object-fit:cover;border-radius:14px;display:block;margin-bottom:12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.stat{background:var(--soft);border-radius:10px;padding:10px}.stat small{display:block;color:var(--mute)}.stat b{font-size:1.05rem}
+.row{border-left:4px solid var(--green);padding:2px 0 2px 12px;margin:12px 0}
+.row.imp{border-color:var(--gold)}
+.adds{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.add{background:var(--soft);border-radius:12px;padding:12px 6px;text-align:center;font-weight:600}.add i{display:block;font-style:normal;font-size:1.8rem}
+.hist{display:flex;gap:12px;align-items:center}.hist img{width:64px;height:64px;border-radius:10px;object-fit:cover}
+.err{color:var(--chili);font-weight:500}
+.dots{display:inline-block;animation:p 1.2s infinite}@keyframes p{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.dots{animation:none}}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<nav id="nav" hidden><div>
+<button data-t="snap">Snap</button><button data-t="hist">Meals</button><button data-t="me">You</button></div></nav>
+<script>
+var app=document.getElementById('app'),nav=document.getElementById('nav');
+function ld(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+var profile=ld('getsalus_profile',null),meals=ld('getsalus_meals',[]),tab='snap',sample=null,busy=false;
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML}
+function chips(name,opts,sel,multi){return '<div class="chips">'+opts.map(function(o){var on=(sel||[]).indexOf(o)>-1;
+return '<label class="chip"><input type="'+(multi?'checkbox':'radio')+'" name="'+name+'" value="'+o+'"'+(on?' checked':'')+'><span>'+o+'</span></label>'}).join('')+'</div>'}
+function vals(n){return Array.prototype.map.call(document.querySelectorAll('input[name='+n+']:checked'),function(i){return i.value})}
+
+function onboard(){
+ var p=profile||{};nav.hidden=true;
+ app.innerHTML='<h1>GetSalus</h1><h3 style="margin-top:6px">What does this meal mean for you?</h3><p class="mute" style="margin-top:10px">Five quick questions. Then photograph a meal and get advice that fits how you eat.</p>'+
+ '<label class="f">How do you eat?</label>'+chips('diet',['Vegetarian','Eggs ok','Non-vegetarian','Vegan'],[p.diet])+
+ '<label class="f">Foods you usually eat</label><input type="text" id="foods" placeholder="e.g. dal, roti, rice, paneer, idli" value="'+esc(p.foods||'')+'">'+
+ '<label class="f">Allergies or foods to avoid</label><input type="text" id="avoid" placeholder="e.g. peanuts, none" value="'+esc(p.avoid||'')+'">'+
+ '<label class="f">What matters most?</label>'+chips('goal',['Eat balanced','More protein','More energy','Gentler on stomach'],[p.goal])+
+ '<label class="f">Usual cuisine</label>'+chips('cuisine',['North Indian','South Indian','Gujarati','Bengali','Mixed / other'],[p.cuisine])+
+ '<p id="oe" class="err"></p><button id="go" style="margin-top:12px">Save and start</button>';
+ document.getElementById('go').onclick=function(){
+  var np={diet:vals('diet')[0],foods:document.getElementById('foods').value.trim(),avoid:document.getElementById('avoid').value.trim(),goal:vals('goal')[0],cuisine:vals('cuisine')[0]};
+  if(!np.diet||!np.goal||!np.cuisine){document.getElementById('oe').textContent='Pick one option for diet, goal and cuisine.';return}
+  profile=np;sv('getsalus_profile',np);show('snap')}
+}
+function show(t){tab=t;if(!profile){onboard();return}nav.hidden=false;
+ Array.prototype.forEach.call(nav.querySelectorAll('button'),function(b){b.setAttribute('aria-current',b.dataset.t===t)});
+ if(t==='snap')snapView();else if(t==='hist')histView();else onboard()}
+nav.onclick=function(e){var t=e.target.dataset&&e.target.dataset.t;if(t)show(t)};
+
+function snapView(){
+ app.innerHTML='<h2>Snap your meal</h2><p class="mute">Take a photo or pick one from your gallery.</p>'+
+ '<label class="drop"><b>Photograph your plate</b><span class="mute">Tap to open camera or gallery</span><input type="file" id="file" accept="image/*" capture="environment"></label><div id="out"></div>';
+ document.getElementById('file').onchange=function(e){var f=e.target.files[0];if(f)analyse(f)}}
+
+function thumb(file){return new Promise(function(res){var img=new Image(),u=URL.createObjectURL(file);
+ img.onload=function(){var c=document.createElement('canvas'),s=200/Math.min(img.width,img.height);c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+ c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.6))};img.onerror=function(){res('')};img.src=u})}
+
+function small(file){return new Promise(function(res,rej){var img=new Image(),u=URL.createObjectURL(file);
+ img.onload=function(){var m=1024,k=Math.min(1,m/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+ c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.8).split(',')[1])};img.onerror=rej;img.src=u})}
+
+async function analyse(file){
+ if(busy)return;busy=true;var out=document.getElementById('out'),url=URL.createObjectURL(file);
+ out.innerHTML='<img class="shot" src="'+url+'" alt="Your meal"><p class="mute">Reading your plate<span class="dots">…</span></p>';
+ try{
+  var b64=await small(file);
+  var resp=await fetch('/.netlify/functions/analyse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:b64,profile:profile})});
+  var r=await resp.json();
+  if(!resp.ok&&!r.error)r={error:'Something went wrong.'};
+  if(r.error){out.innerHTML+='<p class="err">'+esc(r.error)+' Try another photo.</p>';busy=false;return}
+  var th=await thumb(file);meals.unshift({t:Date.now(),th:th,r:r});meals=meals.slice(0,30);sv('getsalus_meals',meals);
+  out.innerHTML='<img class="shot" src="'+url+'" alt="Your meal">'+result(r)+'<button class="ghost" onclick="snapView()">Snap another meal</button>';
+ }catch(e){out.innerHTML+='<p class="err">'+'Could not read this photo. Check your connection and try again.'+'</p>'}
+ busy=false}
+
+function result(r){var a=(r.additions||[]).slice(0,3);
+ return '<div class="card"><h3>'+esc(r.meal)+'</h3><div class="stats"><div class="stat"><small>Protein</small><b>~'+esc(r.protein_g)+' g</b></div><div class="stat"><small>Energy</small><b>~'+esc(r.energy_kcal)+' kcal</b></div><div class="stat"><small>Fibre</small><b>'+esc(r.fibre)+'</b></div><div class="stat"><small>Key nutrients</small><b>'+esc((r.key_nutrients||[]).join(', '))+'</b></div></div>'+
+ '<div class="row"><b>Good</b><br>'+esc(r.good)+'</div><div class="row imp"><b>Could improve</b><br>'+esc(r.improve)+'</div></div>'+
+ '<div class="card"><h3 style="margin-bottom:10px">What should I add?</h3><div class="adds">'+a.map(function(x){return '<div class="add"><i>'+esc(x.emoji)+'</i>'+esc(x.name)+'</div>'}).join('')+'</div></div>'}
+
+function histView(){
+ if(!meals.length){app.innerHTML='<h2>Your meals</h2><p class="mute">No meals yet. Snap your first plate and it will show up here.</p><button onclick="show(\'snap\')">Snap a meal</button>';return}
+ app.innerHTML='<h2>Your meals</h2>'+meals.map(function(m,i){return '<div class="card"><button class="ghost hist" data-i="'+i+'" style="text-align:left;border:0;padding:0"><img src="'+m.th+'" alt=""><span><b>'+esc(m.r.meal)+'</b><br><small class="mute">'+new Date(m.t).toLocaleString([], {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</small></span></button></div>'}).join('');
+ app.onclick=function(e){var b=e.target.closest('[data-i]');if(!b)return;var m=meals[b.dataset.i];
+  app.innerHTML='<button class="ghost" onclick="show(\'hist\')" style="margin-bottom:12px">Back to meals</button><img class="shot" src="'+m.th+'" alt="">'+result(m.r);app.onclick=null}}
+show('snap');
+</script>
+</body>
+  </html>
