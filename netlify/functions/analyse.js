@@ -43,3 +43,4 @@ exports.handler = async (event) => {
   if (lastStatus === 429) return json(429, { error: 'Daily free limit reached. Please try again later.' });
   return json(502, { error: 'The AI is busy right now (' + lastStatus + '). Please try again in a minute.' });
 };
+  
