@@ -4,7 +4,7 @@
   "description": "Photograph your meal. Understand what it means for you.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#EEF1EC",
-  "theme_color": "#2F6B45",
+  "background_color": "#060A0E",
+  "theme_color": "#060A0E",
   "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
 }
